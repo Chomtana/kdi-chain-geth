@@ -29,6 +29,12 @@ const (
 	DeployerProxyContract  = "0x0000000000000000000000000000000000007005"
 )
 
+// KDI contracts
+const (
+	KDITokenContract			= "0x0000000000000000000000000000000000008000"
+	KDIMasterChefContract	= "0x0000000000000000000000000000000000008001"
+)
+
 var (
 	StakingPoolContractAddress    = common.HexToAddress(StakingPoolContract)
 	GovernanceContractAddress     = common.HexToAddress(GovernanceContract)
@@ -55,6 +61,9 @@ var systemContracts = map[common.Address]bool{
 	common.HexToAddress(ChainConfigContract):    true,
 	common.HexToAddress(RuntimeUpgradeContract): true,
 	common.HexToAddress(DeployerProxyContract):  true,
+	// KDI smart contracts
+	common.HexToAddress(KDITokenContract):    		true,
+	common.HexToAddress(KDIMasterChefContract):   true,
 }
 
 func IsSystemContract(address common.Address) bool {
