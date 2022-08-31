@@ -685,7 +685,7 @@ var (
 		Value: ethconfig.Defaults.GPO.MaxPrice.Int64(),
 	}
 	GpoIgnoreGasPriceFlag = cli.Int64Flag{
-		Name:  "gpo.ignorePrice",
+		Name:  "gpo.ignoreprice",
 		Usage: "Minimum gas price will be recommended by gpo",
 		Value: ethconfig.Defaults.GPO.IgnorePrice.Int64(),
 	}
