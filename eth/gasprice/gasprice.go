@@ -32,12 +32,14 @@ import (
 const sampleNumber = 3 // Number of transactions sampled in a block
 
 var DefaultMaxPrice = big.NewInt(500 * params.GWei)
+var DefaultIgnorePrice = big.NewInt(1 * params.GWei)
 
 type Config struct {
 	Blocks          int
 	Percentile      int
 	Default         *big.Int `toml:",omitempty"`
 	MaxPrice        *big.Int `toml:",omitempty"`
+	IgnorePrice     *big.Int `toml:",omitempty"`
 	OracleThreshold int      `toml:",omitempty"`
 }
 
@@ -51,12 +53,13 @@ type OracleBackend interface {
 // Oracle recommends gas prices based on the content of recent
 // blocks. Suitable for both light and full clients.
 type Oracle struct {
-	backend   OracleBackend
-	lastHead  common.Hash
-	lastPrice *big.Int
-	maxPrice  *big.Int
-	cacheLock sync.RWMutex
-	fetchLock sync.Mutex
+	backend     OracleBackend
+	lastHead    common.Hash
+	lastPrice   *big.Int
+	maxPrice    *big.Int
+	ignorePrice *big.Int
+	cacheLock   sync.RWMutex
+	fetchLock   sync.Mutex
 
 	defaultPrice      *big.Int
 	sampleTxThreshold int
@@ -87,10 +90,16 @@ func NewOracle(backend OracleBackend, params Config) *Oracle {
 		maxPrice = DefaultMaxPrice
 		log.Warn("Sanitizing invalid gasprice oracle price cap", "provided", params.MaxPrice, "updated", maxPrice)
 	}
+	ignorePrice := params.IgnorePrice
+	if ignorePrice == nil || ignorePrice.Int64() <= 0 || ignorePrice.Cmp(maxPrice) > 0 {
+		ignorePrice = DefaultIgnorePrice
+		log.Warn("Sanitizing invalid gasprice oracle price minimum", "provided", params.IgnorePrice, "updated", ignorePrice)
+	}
 	return &Oracle{
 		backend:           backend,
 		lastPrice:         params.Default,
 		maxPrice:          maxPrice,
+		ignorePrice:       ignorePrice,
 		checkBlocks:       blocks,
 		percentile:        percent,
 		defaultPrice:      params.Default,
@@ -178,6 +187,11 @@ func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	gpo.lastHead = headHash
 	gpo.lastPrice = price
 	gpo.cacheLock.Unlock()
+
+	if price.Cmp(gpo.ignorePrice) < 0 {
+		price = gpo.ignorePrice
+	}
+
 	return price, nil
 }
 
