@@ -109,7 +109,7 @@ func NewOracle(backend OracleBackend, params Config) *Oracle {
 
 // SuggestPrice returns a gasprice so that newly created transaction can
 // have a very high chance to be included in the following blocks.
-func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
+func (gpo *Oracle) SuggestPriceInner(ctx context.Context) (*big.Int, error) {
 	head, _ := gpo.backend.HeaderByNumber(ctx, rpc.LatestBlockNumber)
 	headHash := head.Hash()
 
@@ -188,11 +188,17 @@ func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	gpo.lastPrice = price
 	gpo.cacheLock.Unlock()
 
+	return price, nil
+}
+
+func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
+	price, err := gpo.SuggestPriceInner(ctx)
+
 	if price.Cmp(gpo.ignorePrice) < 0 {
 		price = gpo.ignorePrice
 	}
 
-	return price, nil
+	return price, err
 }
 
 type getBlockPricesResult struct {
